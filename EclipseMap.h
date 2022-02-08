@@ -15,8 +15,8 @@
 #define PI 3.14159265359
 using namespace std;
 
-
-class EclipseMap {
+class EclipseMap
+{
 private:
     float heightFactor = 80;
     float textureOffset = 0;
@@ -24,8 +24,10 @@ private:
     glm::vec3 lightPos = glm::vec3(0, 4000, 0);
     bool pKeyPressed = false;
     // DISPLAY SETTINGS
-    enum displayFormatOptions {
-        windowed = 1, fullScreen = 0
+    enum displayFormatOptions
+    {
+        windowed = 1,
+        fullScreen = 0
     };
     const char *windowName = "Ceng477 - HW3";
     int defaultScreenWidth = 1000;
@@ -50,6 +52,7 @@ private:
     glm::vec3 cameraUp = cameraStartUp;
     glm::vec3 cameraPosition = cameraStartPosition;
     glm::vec3 cameraDirection = cameraStartDirection;
+
 public:
     unsigned int textureColor;
     unsigned int textureGrey;
@@ -74,12 +77,11 @@ public:
     vector<float> worldNormals;
     vector<float> worldTextures;
 
-
     vector<float> moonVertices;
     vector<unsigned int> moonIndices;
-    vector<float> moonNormals; 
+    vector<float> moonNormals;
     vector<float> moonTextures;
-    
+
     GLFWwindow *openWindow(const char *windowName, int width, int height);
 
     void Render(const char *coloredTexturePath, const char *greyTexturePath, const char *moonTexturePath);
@@ -91,8 +93,10 @@ public:
     void initGreyTexture(const char *filename, GLuint shader);
 
     void initMoonColoredTexture(const char *filename, GLuint shader);
-    
+
     void clearScene();
+
+    void generateSphereVertices(const vector<vertex> &vertices, const vector<unsigned int> &indices, float radius);
 };
 
 #endif

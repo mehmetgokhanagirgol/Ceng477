@@ -2,7 +2,8 @@
 
 using namespace std;
 
-struct vertex {
+struct vertex
+{
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texture;
@@ -14,7 +15,8 @@ struct vertex {
                                                                                            texture(texture) {}
 };
 
-struct triangle {
+struct triangle
+{
     int vertex1;
     int vertex2;
     int vertex3;
@@ -24,14 +26,68 @@ struct triangle {
     triangle(const int &vertex1, const int &vertex2, const int &vertex3) : vertex1(vertex1), vertex2(vertex2),
                                                                            vertex3(vertex3) {}
 };
-void EclipseMap::clearScene() {
-    moonIndices.clear();
-    worldVertexArray.clear();
-    moonVertexArray.clear();
+void EclipseMap::generateSphereVertices(const vector<vertex> &vertices, const vector<unsigned int> &indices, float radius)
+{
+    float x, y, z, xy;
+    float nx, ny, nz, len = 1.0f / radius;
+    float s, t;
+    float sectorStep = 2 * PI / horizontalSplitCount;
+    float stackStep = PI / verticalSplitCount;
+    float sectorAngle, stackAngle;
+
+    for (int i = 0; i <= verticalSplitCount; i++)
+    {
+
+        stackAngle = PI / 2 - i * stackStep;
+        xy = radius * cosf(stackAngle);
+        z = radius * sinf(stackAngle);
+
+        for (int j = 0; j <= horizontalSplitCount; j++)
+        {
+            vertex vert;
+            sectorAngle = j * sectorStep;
+            x = xy * cosf(sectorAngle);
+            y = xy * sinf(sectorAngle);
+            vert.position = glm::vec3(x, y, z);
+            nx = x * len;
+            ny = y * len;
+            nz = z * len;
+            vert.normal = glm::normalize(glm::vec3(nx, ny, nz));
+            s = float(j) / horizontalSplitCount;
+            t = float(i) / verticalSplitCount;
+            vert.texture = glm::vec2(s, t);
+            vertices.push_back(vert);
+        }
+    }
+    int k1, k2;
+    for (int i = 0; i < verticalSplitCount; ++i)
+    {
+        k1 = i * (horizontalSplitCount + 1);
+        k2 = k1 + horizontalSplitCount + 1;
+
+        for (int j = 0; j < horizontalSplitCount; ++j)
+        {
+            if (i != 0)
+            {
+                indices.push_back(k1);
+                indices.push_back(k2);
+                indices.push_back(k1 + 1);
+            }
+
+            if (i != (verticalSplitCount - 1))
+            {
+                indices.push_back(k1 + 1);
+                indices.push_back(k2);
+                indices.push_back(k2 + 1);
+            }
+            // TODO: lineIndices
+        }
+    }
 }
 vector<vertex> moonVertexArray;
 vector<vertex> worldVertexArray;
-void EclipseMap::Render(const char *coloredTexturePath, const char *greyTexturePath, const char *moonTexturePath) {
+void EclipseMap::Render(const char *coloredTexturePath, const char *greyTexturePath, const char *moonTexturePath)
+{
     // Open window
     GLFWwindow *window = openWindow(windowName, screenWidth, screenHeight);
 
@@ -41,81 +97,25 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
 
     initMoonColoredTexture(moonTexturePath, moonShaderID);
 
-    
     // TODO: Set moonVertices
-    //vector<vertex> moonVertexes;
-    // horizontalSplitCount -> sectors
-    // verticalSplitCount -> stacks
-    float x, y, z, xy;
-    float nx, ny, nz, len = 1.0f / moonRadius;
-    float s, t;    
-
-    float sectorStep = 2 * PI / horizontalSplitCount;
-    float stackStep = PI / verticalSplitCount;
-    float sectorAngle, stackAngle;
-
-    for(int i = 0; i <= verticalSplitCount; i++ ) {
-        
-        stackAngle = PI / 2 - i * stackStep;
-        xy = moonRadius * cosf(stackAngle);
-        z = moonRadius * sinf(stackAngle);
-        
-        for (int j = 0; j <= horizontalSplitCount; j++ ) {
-            vertex vert;
-            sectorAngle = j * sectorStep;
-            x = xy * cosf(sectorAngle);
-            y = xy * sinf(sectorAngle);
-            vert.position = glm::vec3(x,y,z);
-            nx = x * len;
-            ny = y * len;
-            nz = z * len;
-            vert.normal = glm::normalize(glm::vec3(nx, ny, nz));
-            s = float(j) / horizontalSplitCount;
-            t = float(i) / verticalSplitCount;
-            vert.texture = glm::vec2(s, t);
-            moonVertexArray.push_back(vert);
-        }
-    }
-    // moon indices 
-    int k1, k2;
-    for(int i = 0; i < verticalSplitCount; ++i) {
-        k1 = i * (horizontalSplitCount + 1);
-        k2 = k1 + horizontalSplitCount + 1;
-
-        for(int j = 0; j < horizontalSplitCount; ++j) {
-            if(i != 0) {
-                moonIndices.push_back(k1);
-                moonIndices.push_back(k2);
-                moonIndices.push_back(k1 + 1);
-            }
-
-            if (i != (verticalSplitCount - 1)) {
-                moonIndices.push_back(k1 + 1);
-                moonIndices.push_back(k2);
-                moonIndices.push_back(k2 + 1);
-            }
-            // TODO : lineIndices
-        }
- 
-    }
-    
+    generateSphereVertices(moonVertexArray, moonIndices, moonRadius);
 
     // TODO: Configure Buffers
     glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-    
+    glBindVertexArray(VAO);
+
     glBufferData(GL_ARRAY_BUFFER, moonVertexArray.size() * sizeof(vertex), moonVertexArray.data(), GL_STATIC_DRAW);
 
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, moonIndices.size() * sizeof(unsigned int), moonIndices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) offsetof(vertex, normal));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (offsetof(vertex, texture)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)nullptr);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)offsetof(vertex, normal));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(offsetof(vertex, texture)));
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-    
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
     // World commands
     // Load shaders
     GLuint worldShaderID = initShaders("worldShader.vert", "worldShader.frag");
@@ -124,16 +124,15 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
     initGreyTexture(greyTexturePath, worldShaderID);
 
     // TODO: Set worldVertices
-    
+    generateSphereVertices(worldVertexArray, worldIndices, radius);
     // TODO: Configure Buffers
-    /* Init VAO */
-	
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
 
     // Main rendering loop
-    do {
+    do
+    {
         glViewport(0, 0, screenWidth, screenHeight);
 
         glClearStencil(0);
@@ -141,49 +140,43 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-
         // TODO: Handle key presses
         handleKeyPress(window);
 
         // TODO: Manipulate rotation variables
-        
+
         // TODO: Bind textures
-        
+
         // TODO: Use moonShaderID program
-        
+
         // TODO: Update camera at every frame
-        
+
         // TODO: Update uniform variables at every frame
-        
-        // TODO: Bind moon vertex array        
+
+        // TODO: Bind moon vertex array
 
         // TODO: Draw moon object
-        // interleaved array
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glVertexPointer(3, GL_FLOAT, interleavedStride, &moonIndices[0]);
         glNormalPointer(GL_FLOAT, interleavedStride, &moonNormals[0]);
         glTexCoordPointer(2, GL_FLOAT, interleavedStride, &moonTextures[0]);
-
         glDrawElements(GL_TRIANGLES, moonIndices.size(), GL_UNSIGNED_INT, nullptr);
-
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_NORMAL_ARRAY);
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        
         /*************************/
 
         // TODO: Use worldShaderID program
-        
+
         // TODO: Update camera at every frame
 
         // TODO: Update uniform variables at every frame
-        
+
         // TODO: Bind world vertex array
-        
+
         // TODO: Draw world object
-        
 
         // Swap buffers and poll events
         glfwSwapBuffers(window);
@@ -195,12 +188,11 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
     glDeleteBuffers(1, &moonVBO);
     glDeleteBuffers(1, &moonEBO);
 
-    
     // Delete buffers
     glDeleteBuffers(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
-   
+
     glDeleteProgram(moonShaderID);
     glDeleteProgram(worldShaderID);
 
@@ -208,15 +200,18 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
     glfwTerminate();
 }
 
-void EclipseMap::handleKeyPress(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+void EclipseMap::handleKeyPress(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
-
 }
 
-GLFWwindow *EclipseMap::openWindow(const char *windowName, int width, int height) {
-    if (!glfwInit()) {
+GLFWwindow *EclipseMap::openWindow(const char *windowName, int width, int height)
+{
+    if (!glfwInit())
+    {
         getchar();
         return 0;
     }
@@ -230,7 +225,8 @@ GLFWwindow *EclipseMap::openWindow(const char *windowName, int width, int height
     GLFWwindow *window = glfwCreateWindow(width, height, windowName, NULL, NULL);
     glfwSetWindowMonitor(window, NULL, 1, 31, screenWidth, screenHeight, mode->refreshRate);
 
-    if (window == NULL) {
+    if (window == NULL)
+    {
         getchar();
         glfwTerminate();
         return 0;
@@ -239,7 +235,8 @@ GLFWwindow *EclipseMap::openWindow(const char *windowName, int width, int height
     glfwMakeContextCurrent(window);
 
     glewExperimental = true;
-    if (glewInit() != GLEW_OK) {
+    if (glewInit() != GLEW_OK)
+    {
         getchar();
         glfwTerminate();
         return 0;
@@ -251,15 +248,15 @@ GLFWwindow *EclipseMap::openWindow(const char *windowName, int width, int height
     return window;
 }
 
-
-void EclipseMap::initColoredTexture(const char *filename, GLuint shader) {
+void EclipseMap::initColoredTexture(const char *filename, GLuint shader)
+{
     int width, height;
     glGenTextures(1, &textureColor);
     cout << shader << endl;
     glBindTexture(GL_TEXTURE_2D, textureColor);
     // set the texture wrapping parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                    GL_CLAMP_TO_EDGE);    // set texture wrapping to GL_REPEAT (default wrapping method)
+                    GL_CLAMP_TO_EDGE); // set texture wrapping to GL_REPEAT (default wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -280,7 +277,8 @@ void EclipseMap::initColoredTexture(const char *filename, GLuint shader) {
     unsigned long location = 0;
     int i = 0, j = 0;
 
-    if (!infile) {
+    if (!infile)
+    {
         printf("Error opening jpeg file %s\n!", filename);
         return;
     }
@@ -298,11 +296,12 @@ void EclipseMap::initColoredTexture(const char *filename, GLuint shader) {
     jpeg_start_decompress(&cinfo);
 
     /* allocate memory to hold the uncompressed image */
-    raw_image = (unsigned char *) malloc(cinfo.output_width * cinfo.output_height * cinfo.num_components);
+    raw_image = (unsigned char *)malloc(cinfo.output_width * cinfo.output_height * cinfo.num_components);
     /* now actually read the jpeg into the raw buffer */
-    row_pointer[0] = (unsigned char *) malloc(cinfo.output_width * cinfo.num_components);
+    row_pointer[0] = (unsigned char *)malloc(cinfo.output_width * cinfo.num_components);
     /* read one scan line at a time */
-    while (cinfo.output_scanline < cinfo.image_height) {
+    while (cinfo.output_scanline < cinfo.image_height)
+    {
         jpeg_read_scanlines(&cinfo, row_pointer, 1);
         for (i = 0; i < cinfo.image_width * cinfo.num_components; i++)
             raw_image[location++] = row_pointer[0][i];
@@ -311,9 +310,7 @@ void EclipseMap::initColoredTexture(const char *filename, GLuint shader) {
     height = cinfo.image_height;
     width = cinfo.image_width;
 
-
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, raw_image);
-   
 
     imageWidth = width;
     imageHeight = height;
@@ -330,16 +327,16 @@ void EclipseMap::initColoredTexture(const char *filename, GLuint shader) {
     free(row_pointer[0]);
     free(raw_image);
     fclose(infile);
-
 }
 
-void EclipseMap::initGreyTexture(const char *filename, GLuint shader) {
+void EclipseMap::initGreyTexture(const char *filename, GLuint shader)
+{
 
     glGenTextures(1, &textureGrey);
     glBindTexture(GL_TEXTURE_2D, textureGrey);
     // set the texture wrapping parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                    GL_CLAMP_TO_EDGE);    // set texture wrapping to GL_REPEAT (default wrapping method)
+                    GL_CLAMP_TO_EDGE); // set texture wrapping to GL_REPEAT (default wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -361,7 +358,8 @@ void EclipseMap::initGreyTexture(const char *filename, GLuint shader) {
     unsigned long location = 0;
     int i = 0, j = 0;
 
-    if (!infile) {
+    if (!infile)
+    {
         printf("Error opening jpeg file %s\n!", filename);
         return;
     }
@@ -379,11 +377,12 @@ void EclipseMap::initGreyTexture(const char *filename, GLuint shader) {
     jpeg_start_decompress(&cinfo);
 
     /* allocate memory to hold the uncompressed image */
-    raw_image = (unsigned char *) malloc(cinfo.output_width * cinfo.output_height * cinfo.num_components);
+    raw_image = (unsigned char *)malloc(cinfo.output_width * cinfo.output_height * cinfo.num_components);
     /* now actually read the jpeg into the raw buffer */
-    row_pointer[0] = (unsigned char *) malloc(cinfo.output_width * cinfo.num_components);
+    row_pointer[0] = (unsigned char *)malloc(cinfo.output_width * cinfo.num_components);
     /* read one scan line at a time */
-    while (cinfo.output_scanline < cinfo.image_height) {
+    while (cinfo.output_scanline < cinfo.image_height)
+    {
         jpeg_read_scanlines(&cinfo, row_pointer, 1);
         for (i = 0; i < cinfo.image_width * cinfo.num_components; i++)
             raw_image[location++] = row_pointer[0][i];
@@ -393,9 +392,6 @@ void EclipseMap::initGreyTexture(const char *filename, GLuint shader) {
     width = cinfo.image_width;
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, raw_image);
-  
-
-
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -409,17 +405,17 @@ void EclipseMap::initGreyTexture(const char *filename, GLuint shader) {
     free(row_pointer[0]);
     free(raw_image);
     fclose(infile);
-
 }
 
-void EclipseMap::initMoonColoredTexture(const char *filename, GLuint shader) {
+void EclipseMap::initMoonColoredTexture(const char *filename, GLuint shader)
+{
     int width, height;
     glGenTextures(1, &moonTextureColor);
     cout << shader << endl;
     glBindTexture(GL_TEXTURE_2D, moonTextureColor);
     // set the texture wrapping parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                    GL_CLAMP_TO_EDGE);    // set texture wrapping to GL_REPEAT (default wrapping method)
+                    GL_CLAMP_TO_EDGE); // set texture wrapping to GL_REPEAT (default wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -440,7 +436,8 @@ void EclipseMap::initMoonColoredTexture(const char *filename, GLuint shader) {
     unsigned long location = 0;
     int i = 0, j = 0;
 
-    if (!infile) {
+    if (!infile)
+    {
         printf("Error opening jpeg file %s\n!", filename);
         return;
     }
@@ -458,11 +455,12 @@ void EclipseMap::initMoonColoredTexture(const char *filename, GLuint shader) {
     jpeg_start_decompress(&cinfo);
 
     /* allocate memory to hold the uncompressed image */
-    raw_image = (unsigned char *) malloc(cinfo.output_width * cinfo.output_height * cinfo.num_components);
+    raw_image = (unsigned char *)malloc(cinfo.output_width * cinfo.output_height * cinfo.num_components);
     /* now actually read the jpeg into the raw buffer */
-    row_pointer[0] = (unsigned char *) malloc(cinfo.output_width * cinfo.num_components);
+    row_pointer[0] = (unsigned char *)malloc(cinfo.output_width * cinfo.num_components);
     /* read one scan line at a time */
-    while (cinfo.output_scanline < cinfo.image_height) {
+    while (cinfo.output_scanline < cinfo.image_height)
+    {
         jpeg_read_scanlines(&cinfo, row_pointer, 1);
         for (i = 0; i < cinfo.image_width * cinfo.num_components; i++)
             raw_image[location++] = row_pointer[0][i];
@@ -472,7 +470,6 @@ void EclipseMap::initMoonColoredTexture(const char *filename, GLuint shader) {
     width = cinfo.image_width;
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, raw_image);
-   
 
     imageWidth = width;
     imageHeight = height;
@@ -489,5 +486,4 @@ void EclipseMap::initMoonColoredTexture(const char *filename, GLuint shader) {
     free(row_pointer[0]);
     free(raw_image);
     fclose(infile);
-
 }
