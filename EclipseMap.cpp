@@ -26,10 +26,10 @@ struct triangle
     triangle(const int &vertex1, const int &vertex2, const int &vertex3) : vertex1(vertex1), vertex2(vertex2),
                                                                            vertex3(vertex3) {}
 };
-void EclipseMap::generateSphereVertices(const vector<vertex> &vertices, const vector<unsigned int> &indices, float radius)
+void EclipseMap::generateSphereVertices(const vector<vertex> &vertices, const vector<unsigned int> &indices, float modelRadius)
 {
     float x, y, z, xy;
-    float nx, ny, nz, len = 1.0f / radius;
+    float nx, ny, nz, len = 1.0f / modelRadius;
     float s, t;
     float sectorStep = 2 * PI / horizontalSplitCount;
     float stackStep = PI / verticalSplitCount;
@@ -39,8 +39,8 @@ void EclipseMap::generateSphereVertices(const vector<vertex> &vertices, const ve
     {
 
         stackAngle = PI / 2 - i * stackStep;
-        xy = radius * cosf(stackAngle);
-        z = radius * sinf(stackAngle);
+        xy = modelRadius * cosf(stackAngle);
+        z = modelRadius * sinf(stackAngle);
 
         for (int j = 0; j <= horizontalSplitCount; j++)
         {
@@ -86,10 +86,15 @@ void EclipseMap::generateSphereVertices(const vector<vertex> &vertices, const ve
 }
 vector<vertex> moonVertexArray;
 vector<vertex> worldVertexArray;
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}  
 void EclipseMap::Render(const char *coloredTexturePath, const char *greyTexturePath, const char *moonTexturePath)
 {
     // Open window
     GLFWwindow *window = openWindow(windowName, screenWidth, screenHeight);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  
 
     // Moon commands
     // Load shaders
@@ -101,17 +106,15 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
     generateSphereVertices(moonVertexArray, moonIndices, moonRadius);
 
     // TODO: Configure Buffers
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
+    glGenVertexArrays(1, &moonVAO);
+    glBindVertexArray(moonVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, moonVBO);
 
     glBufferData(GL_ARRAY_BUFFER, moonVertexArray.size() * sizeof(vertex), moonVertexArray.data(), GL_STATIC_DRAW);
-
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, moonIndices.size() * sizeof(unsigned int), moonIndices.data(), GL_STATIC_DRAW);
-
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, moonIndices.size() * sizeof(unsigned int), moonIndices.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)nullptr);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)offsetof(vertex, normal));
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(offsetof(vertex, texture)));
-
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)offsetof(vertex, normal));
+    //glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(offsetof(vertex, texture)));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
@@ -148,7 +151,7 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
         // TODO: Bind textures
 
         // TODO: Use moonShaderID program
-
+        glUseProgram(moonShaderID);
         // TODO: Update camera at every frame
 
         // TODO: Update uniform variables at every frame
