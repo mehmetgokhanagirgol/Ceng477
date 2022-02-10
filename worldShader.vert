@@ -35,15 +35,15 @@ void main()
 {
     
     // Calculate texture coordinate based on data.TexCoord
-    vec2 textureCoordinate = vec2(0, 0);
+    vec2 textureCoordinate = VertexTex;
     vec4 texColor = texture(TexGrey, textureCoordinate);
-
+    data.Position = VertexPosition;
+    data.Normal = VertexNormal;
+    data.TexCoord = VertexTex;
     // get texture value, compute height
     // compute normal vector
-
-
+    gl_Position = vec4(VertexPosition, 1); // this is a placeholder. It does not correctly set the position
+    LightVector = normalize(lightPosition - VertexPosition);
+    CameraVector = normalize(cameraPosition - VertexPosition);
    // set gl_Position variable correctly to give the transformed vertex position
-
-
-    gl_Position = vec4(0,0,0,0); // this is a placeholder. It does not correctly set the position
 }

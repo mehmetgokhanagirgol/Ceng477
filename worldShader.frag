@@ -29,9 +29,8 @@ vec3 diffuseLightColor = vec3(1.0f);
 void main()
 {
     // Calculate texture coordinate based on data.TexCoord
-    vec2 textureCoordinate = vec2(0, 0);
+    vec2 textureCoordinate = data.TexCoord;
     vec4 texColor = texture(TexColor, textureCoordinate);
-
     vec3 ambient = vec3(0, 0, 0);    
     vec3 diffuse = vec3(0, 0, 0);
     vec3 spec = vec3(0, 0, 0);

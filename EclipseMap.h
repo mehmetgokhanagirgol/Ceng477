@@ -15,8 +15,8 @@
 #define PI 3.14159265359
 using namespace std;
 
-class EclipseMap
-{
+
+class EclipseMap {
 private:
     float heightFactor = 80;
     float textureOffset = 0;
@@ -24,10 +24,8 @@ private:
     glm::vec3 lightPos = glm::vec3(0, 4000, 0);
     bool pKeyPressed = false;
     // DISPLAY SETTINGS
-    enum displayFormatOptions
-    {
-        windowed = 1,
-        fullScreen = 0
+    enum displayFormatOptions {
+        windowed = 1, fullScreen = 0
     };
     const char *windowName = "Ceng477 - HW3";
     int defaultScreenWidth = 1000;
@@ -36,6 +34,10 @@ private:
     int screenHeight = defaultScreenHeight;
     int displayFormat = displayFormatOptions::windowed;
     // CAMERA SETTINGS
+    glm::mat4 MVP;
+    glm::mat4 M_model;
+    glm::mat4 M_view;
+    glm::mat4 M_projection;
     float projectionAngle = 45;
     float aspectRatio = 1;
     float near = 0.1;
@@ -52,8 +54,8 @@ private:
     glm::vec3 cameraUp = cameraStartUp;
     glm::vec3 cameraPosition = cameraStartPosition;
     glm::vec3 cameraDirection = cameraStartDirection;
-
 public:
+    unsigned int worldTexture;
     unsigned int textureColor;
     unsigned int textureGrey;
     unsigned int VAO;
@@ -64,7 +66,7 @@ public:
     int horizontalSplitCount = 250;
     int verticalSplitCount = 125;
     int interleavedStride = 32;
-
+    unsigned int moonTexture;
     unsigned int moonTextureColor;
     unsigned int moonVAO;
     unsigned int moonVBO, moonEBO;
@@ -76,11 +78,14 @@ public:
     vector<unsigned int> worldIndices;
     vector<float> worldNormals;
     vector<float> worldTextures;
+    vector<float> worldInter;
+    
 
     vector<float> moonVertices;
     vector<unsigned int> moonIndices;
-    vector<float> moonNormals;
+    vector<float> moonNormals; 
     vector<float> moonTextures;
+    vector<float> moonInter;
 
     GLFWwindow *openWindow(const char *windowName, int width, int height);
 
@@ -93,10 +98,16 @@ public:
     void initGreyTexture(const char *filename, GLuint shader);
 
     void initMoonColoredTexture(const char *filename, GLuint shader);
-
+    
     void clearScene();
 
-    void generateSphereVertices(const vector<vertex> &vertices, const vector<unsigned int> &indices, float radius);
+    void updateCamera(GLuint shaderProgram);
+
+    void initScene();
+
+    void handleUniforms(GLuint idProgramShader);
+
+    void handleCamera(GLuint idProgramShader);
 };
 
 #endif
