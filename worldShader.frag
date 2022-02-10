@@ -30,12 +30,10 @@ void main()
 {
     // Calculate texture coordinate based on data.TexCoord
     vec2 textureCoordinate = data.TexCoord;
-    vec4 texColor = texture(TexColor, textureCoordinate);
+    vec4 texColor = mix(texture(TexColor, textureCoordinate), texture(MoonTexColor, textureCoordinate),1);
     vec3 ambient = vec3(0, 0, 0);    
     vec3 diffuse = vec3(0, 0, 0);
     vec3 spec = vec3(0, 0, 0);
 
-    FragColor = texColor;
-
-
+    FragColor = vec4(12,113,12,0.8);
 }

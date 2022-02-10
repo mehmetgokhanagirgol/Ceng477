@@ -76,18 +76,16 @@ void generateSphereVertices(const EclipseMap& context, vector<vertex> &vertices,
     
 }
 void EclipseMap::initScene() {
+    glm::vec3 left = glm::cross(cameraStartUp, cameraDirection);
+	cameraStartUp = glm::rotate(cameraStartUp, -1.07999f, left);
+	cameraDirection = glm::rotate(cameraDirection, -1.07999f, left);
 	M_model = glm::rotate(M_model, (float) glm::radians(-60.0), glm::vec3(1, 0, 0));
 	M_view = glm::lookAt(cameraStartPosition, cameraStartPosition + cameraDirection, cameraStartUp);
 	M_projection = glm::perspective(projectionAngle, aspectRatio, near, far);
 	MVP = M_projection * M_view * M_model;
 }
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}  
+
 void EclipseMap::updateCamera(GLuint shaderProgram) {
-    int location = glGetUniformLocation(shaderProgram, "cameraPosition");
-    glUniform3f(location, cameraStartPosition.x, cameraStartPosition.y, cameraStartPosition.z);
     
 }
 glm::mat4 ProjectionMatrix;
@@ -100,6 +98,11 @@ void EclipseMap::handleUniforms(GLuint idProgramShader) {
 	glUniform1i(glGetUniformLocation(idProgramShader, "textureOffset"), textureOffset);
 	glUniform3fv(glGetUniformLocation(idProgramShader, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 	glUniform3fv(glGetUniformLocation(idProgramShader, "lightPosition"), 1, glm::value_ptr(lightPos));
+	glUniform1i(glGetUniformLocation(idProgramShader, "TexColor"), 0);
+	glUniform1i(glGetUniformLocation(idProgramShader, "TexGrey"), 2);
+	glUniform1i(glGetUniformLocation(idProgramShader, "MoonTexColor"), 1);
+
+
 }
 void EclipseMap::handleCamera(GLuint idProgramShader) {
     cameraPosition += speed * cameraDirection;
@@ -114,7 +117,7 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
 {
     // Open window
     GLFWwindow *window = openWindow(windowName, screenWidth, screenHeight);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  
+    //glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  
 
     // Moon commands
     // Load shaders
@@ -201,7 +204,8 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
         handleKeyPress(window);
         // TODO: Manipulate rotation variables
         // TODO: Bind texture
-        glBindTexture(GL_TEXTURE_2D, moonTexture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, moonTextureColor);
         // TODO: Use moonShaderID program
         glUseProgram(moonShaderID);
         // TODO: Update camera at every frame
@@ -212,7 +216,12 @@ void EclipseMap::Render(const char *coloredTexturePath, const char *greyTextureP
         glBindVertexArray(moonVAO);
         // TODO: Draw moon object
         glDrawElements(GL_TRIANGLES, moonIndices.size(), GL_UNSIGNED_INT, nullptr);
+
         /*************************/
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureColor);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, textureGrey);
         // TODO: Use worldShaderID program
         glUseProgram(worldShaderID);
         // TODO: Update camera at every frame
